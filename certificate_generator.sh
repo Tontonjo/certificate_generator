@@ -5,18 +5,25 @@
 
 # This script aims to create a root CA, an intermediate CA and then certificates, wildcard or not, for your hosts
 # in dedicated subfolders, and put a script in each to quickly deploy the root and intermediate certificate on your hosts
-# I'm not very used to certificates generation and management so if you find something strange, please let me know
 
+# Disclaimer:
+# I'm not very used to certificates generation and management so if you find something strange, please let me know
+# This script has been created for fun and to play with certificate generation
+# This is indeed not intended for production use
+
+# Sources:
+# https://stackoverflow.com/questions/26759550/how-to-create-own-self-signed-root-certificate-and-intermediate-ca-to-be-importe
 
 # Usage:
-# - Generate a wildcard certificate:
-# bash certificate_generator.sh
-# - Generate a dedicated certificate for one or more hosts:
-# -- Each host will have a dedicated certificate
-# bash certificate_generator.sh server1 server2 server3
+# Edit configurations according to your need in "settings" section.
+# Generate a wildcard certificate:
+# - bash certificate_generator.sh
+# Generate a dedicated certificate for one or more hosts - Each host will have a dedicated certificate
+# - bash certificate_generator.sh server1 server2 server3
+# Script will generate a .bat script in each folder aimed to easilly import needed certificates on windows hosts.
 
-# Version: 1.0
-# Version: 1.1 Add out for new hosts if argument specified
+# Version: 1.0 - Initial release
+# Version: 1.1 - Add out for new hosts if argument specified
 # Version: 2.0 - Lots of changes
 # Version: 2.1 - Edit path and pack creation - rename certificates
 # Version: 2.2 - prepare for ecdsa
