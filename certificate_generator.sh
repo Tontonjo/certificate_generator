@@ -29,6 +29,7 @@
 # Version: 2.2 - prepare for ecdsa
 # Version: 2.3 - Fix path to create fullchain
 # Version: 2.4 - Edit some paths
+# Version: 2.5 - add check for openssl installation
 
 # ------------- Settings ------------------
 tld="local.domain.tld"
@@ -41,6 +42,9 @@ rootCAvalidity="36500"
 certvalidity="3650"
 # ------------- Settings ------------------
 
+
+if openssl help > /dev/null 2>&1 ; then
+    
 cd "$(dirname "$0")"
 
 # if directory exist skip creation of root-ca and intermediate:
@@ -63,13 +67,11 @@ else
 	
 	[ CA_default ]
 	dir            = "./certificate"                  				  # Where everything is kept
-	certs          = "./certificate/certs"            			      # Where the issued certs are kept
-	crl_dir        = "./certificate/root-ca/crl"                      # Where the issued crl are kept
+	certs          = "./certificate/certs"            			      # Where the issued certs are kept                    # Where the issued crl are kept
 	database       = "./certificate/intermediate/index.txt"           # database index file.
 	new_certs_dir  = "./certificate/intermediate/newcerts"            # default place for new certs.
 	certificate    = "./certificate/root-ca/certs/ca_crt.crt"         # The CA certificate
 	serial         = "./certificate/intermediate/serial"   	          # The current serial number
-	crl            = "./certificate/crl.pem"						  # The current CRL
 	private_key    = "./certificate/root-ca/private/ca_key.pem" 	  # The private key
 	RANDFILE       = "./.rnd"                					      # private random number file
 	nameopt        = root_CA
@@ -110,7 +112,7 @@ else
 	openssl req -config "./certificate/openssl.conf" -new -x509 -days $rootCAvalidity -utf8 -nameopt multiline,utf8 -key "./certificate/root-ca/private/ca_key.pem" -sha256 -extensions v3_req -out "./certificate/root-ca/certs/ca_crt.crt" -subj "/C=$country/ST=$state/O=$organisation/CN=$server.$tld/L=$town"
 	openssl genrsa -out "./certificate/intermediate/private/intermediate_key.pem" 2048
 #	openssl ecparam -name prime256v1 -genkey -noout -out "./certificate/intermediate/private/intermediate_key.pem"
-	openssl req -config "./certificate/openssl.conf" -sha256 -new -utf8 -nameopt multiline,utf8 -key "./certificate/intermediate/private/intermediate_key.pem" -out "./certificate/intermediate/certs/intermediate.csr" -subj "/C=$country/ST=$state/O=$organisation/CN=$server/L=$town"
+	openssl req -config "./certificate/openssl.conf" -sha256 -new -utf8 -nameopt multiline,utf8 -key "./certificate/intermediate/private/intermediate_key.pem" -out "./certificate/intermediate/certs/intermediate.csr" -subj "/C=$country/ST=$state/O=$organisation/CN=$server.$tld/L=$town"
 	openssl ca -batch -policy policy_match -config "./certificate/openssl.conf" -keyfile "./certificate/root-ca/private/ca_key.pem" -cert "./certificate/root-ca/certs/ca_crt.crt" -extensions v3_req -notext -md sha256 -in "./certificate/intermediate/certs/intermediate.csr" -out "./certificate/intermediate/certs/intermediate_crt.crt"
 
 
@@ -123,10 +125,9 @@ if [ -z "$@" ]; then
 			echo "- Certificate already exist"
 		else
 			mkdir -p "./certificate/hosts-certs/wildcard/pack"
-			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=*.$tld/C=$country/ST=$state/O=$organisation/L=$town"
+			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$tld/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=*.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 			openssl ca -batch -notext -policy policy_match -days $certvalidity -extensions req_ext -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/wildcard/wildcard_crt.crt" -infiles "./certificate/hosts-certs/wildcard/server.request"
-			cp "./certificate/root-ca/private/ca_key.pem" "./certificate/hosts-certs/wildcard/pack"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/wildcard/pack"
 			cp "./certificate/intermediate/certs/intermediate_crt.crt" "./certificate/hosts-certs/wildcard/pack"
 			cp "./certificate/hosts-certs/wildcard/wildcard_crt.crt" "./certificate/hosts-certs/wildcard/pack"
@@ -158,7 +159,6 @@ extendedKeyUsage = serverAuth" > "./certificate/hosts-certs/$I/subjectaltname_$I
 			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/$I/key.pem" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/$I/$I.key" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 			openssl ca -batch -notext -policy policy_match -days $certvalidity -extfile "./certificate/hosts-certs/$I/subjectaltname_$I.req" -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/$I/$I.crt" -infiles "./certificate/hosts-certs/$I/$I.request"
-			cp "./certificate/root-ca/private/ca_key.pem" "./certificate/hosts-certs/$I/pack"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/$I/pack"
 			cp "./certificate/intermediate/certs/intermediate_crt.crt" "./certificate/hosts-certs/$I/pack"
 			cp "./certificate/hosts-certs/$I/$I.crt" "./certificate/hosts-certs/$I/pack"
@@ -180,4 +180,9 @@ PAUSE
 ' > "./certificate/hosts-certs/$I/pack/certificate_importer.bat"
 	fi
 	done
+fi
+
+else
+    echo "- Openssl not installed"
+	echo "- install with "apt-get install openssl""
 fi
