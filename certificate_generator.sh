@@ -30,6 +30,7 @@
 # Version: 2.3 - Fix path to create fullchain
 # Version: 2.4 - Edit some paths
 # Version: 2.5 - add check for openssl installation
+# Version: 2.6 - small fixes - correction of cnames
 
 # ------------- Settings ------------------
 tld="local.domain.tld"
@@ -41,8 +42,6 @@ server="nas"
 rootCAvalidity="36500"
 certvalidity="3650"
 # ------------- Settings ------------------
-
-
 if openssl help > /dev/null 2>&1 ; then
     
 cd "$(dirname "$0")"
@@ -109,10 +108,10 @@ else
 	" > "./certificate/openssl.conf"
 	openssl genrsa -out "./certificate/root-ca/private/ca_key.pem" 2048
 #	openssl ecparam -name prime256v1 -genkey -noout -out "./certificate/root-ca/private/ca_key.pem"
-	openssl req -config "./certificate/openssl.conf" -new -x509 -days $rootCAvalidity -utf8 -nameopt multiline,utf8 -key "./certificate/root-ca/private/ca_key.pem" -sha256 -extensions v3_req -out "./certificate/root-ca/certs/ca_crt.crt" -subj "/C=$country/ST=$state/O=$organisation/CN=$server.$tld/L=$town"
+	openssl req -config "./certificate/openssl.conf" -new -x509 -days $rootCAvalidity -utf8 -nameopt multiline,utf8 -key "./certificate/root-ca/private/ca_key.pem" -sha256 -extensions v3_req -out "./certificate/root-ca/certs/ca_crt.crt" -subj "/C=$country/ST=$state/O=$organisation/CN=$tld/L=$town"
 	openssl genrsa -out "./certificate/intermediate/private/intermediate_key.pem" 2048
 #	openssl ecparam -name prime256v1 -genkey -noout -out "./certificate/intermediate/private/intermediate_key.pem"
-	openssl req -config "./certificate/openssl.conf" -sha256 -new -utf8 -nameopt multiline,utf8 -key "./certificate/intermediate/private/intermediate_key.pem" -out "./certificate/intermediate/certs/intermediate.csr" -subj "/C=$country/ST=$state/O=$organisation/CN=$server.$tld/L=$town"
+	openssl req -config "./certificate/openssl.conf" -sha256 -new -utf8 -nameopt multiline,utf8 -key "./certificate/intermediate/private/intermediate_key.pem" -out "./certificate/intermediate/certs/intermediate.csr" -subj "/C=$country/ST=$state/O=$organisation/CN=$tld/L=$town"
 	openssl ca -batch -policy policy_match -config "./certificate/openssl.conf" -keyfile "./certificate/root-ca/private/ca_key.pem" -cert "./certificate/root-ca/certs/ca_crt.crt" -extensions v3_req -notext -md sha256 -in "./certificate/intermediate/certs/intermediate.csr" -out "./certificate/intermediate/certs/intermediate_crt.crt"
 
 
@@ -121,8 +120,8 @@ fi
 # If nothing passed as argument, generate a wildcard for TLD
 if [ -z "$@" ]; then
 		echo "No hostname specified "
-		if [[ -d "./certificate/hosts-certs/$server" ]]; then
-			echo "- Certificate already exist"
+		if [[ -d "./certificate/hosts-certs/wildcard" ]]; then
+			echo "- Wildcard certificate already exist"
 		else
 			mkdir -p "./certificate/hosts-certs/wildcard/pack"
 			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$tld/C=$country/ST=$state/O=$organisation/L=$town"
@@ -156,7 +155,7 @@ PAUSE' > "./certificate/hosts-certs/wildcard/pack/certificate_importer.bat"
 			mkdir -p "./certificate/hosts-certs/$I/pack"
 			echo "subjectAltName = DNS:$I.$tld
 extendedKeyUsage = serverAuth" > "./certificate/hosts-certs/$I/subjectaltname_$I.req"
-			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/$I/key.pem" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
+			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/$I/key.pem" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$tld/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/$I/$I.key" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 			openssl ca -batch -notext -policy policy_match -days $certvalidity -extfile "./certificate/hosts-certs/$I/subjectaltname_$I.req" -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/$I/$I.crt" -infiles "./certificate/hosts-certs/$I/$I.request"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/$I/pack"
