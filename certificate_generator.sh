@@ -38,7 +38,6 @@ country="fr"
 state="Vaucluse"
 town="Lyon"
 organisation="Home"
-server="nas"
 rootCAvalidity="36500"
 certvalidity="3650"
 # ------------- Settings ------------------
