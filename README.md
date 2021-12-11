@@ -14,6 +14,10 @@ The script also generate a bat script named certificate_importer.bat in eache pa
 I'm not very used to certificates generation and management so if you find something strange, please let me know or make a PR.
 
 # Usage:
+- Ensure you have openssl installed
+- ```shell
+apt-get install openssl
+```
 - Download script, open it, and edit the "settings" section according to your needs
 - - Generate a wildcard certificate:
 ```shell
