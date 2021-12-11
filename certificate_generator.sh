@@ -65,14 +65,14 @@ else
 	default_ca = CA_default
 	
 	[ CA_default ]
-	dir            = "./certificate"                  				  # Where everything is kept
-	certs          = "./certificate/certs"            			      # Where the issued certs are kept                    # Where the issued crl are kept
-	database       = "./certificate/intermediate/index.txt"           # database index file.
-	new_certs_dir  = "./certificate/intermediate/newcerts"            # default place for new certs.
-	certificate    = "./certificate/root-ca/certs/ca_crt.crt"         # The CA certificate
-	serial         = "./certificate/intermediate/serial"   	          # The current serial number
-	private_key    = "./certificate/root-ca/private/ca_key.pem" 	  # The private key
-	RANDFILE       = "./.rnd"                					      # private random number file
+	dir            = "./certificate"                  		# Where everything is kept
+	certs          = "./certificate/certs"            		# Where the issued certs are kept
+	database       = "./certificate/intermediate/index.txt"         # database index file.
+	new_certs_dir  = "./certificate/intermediate/newcerts"          # default place for new certs.
+	certificate    = "./certificate/root-ca/certs/ca_crt.crt"       # The CA certificate
+	serial         = "./certificate/intermediate/serial"   	        # The current serial number
+	private_key    = "./certificate/root-ca/private/ca_key.pem" 	# The private key
+	RANDFILE       = "./.rnd"                			# private random number file
 	nameopt        = root_CA
 	certopt        = root_CA
 	policy         = policy_match
