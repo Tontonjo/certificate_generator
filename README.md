@@ -15,7 +15,7 @@ I'm not very used to certificates generation and management so if you find somet
 
 # Usage:
 - Ensure you have openssl installed
-- ```shell
+```shell
 apt-get install openssl
 ```
 - Download script, open it, and edit the "settings" section according to your needs
