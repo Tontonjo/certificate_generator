@@ -18,7 +18,8 @@ I'm not very used to certificates generation and management so if you find somet
 ```shell
 apt-get install openssl
 ```
-- Download script, open it, and edit the "settings" section according to your needs
+- Download script
+- Open it, and edit the "settings" section according to your needs
 - - Generate a wildcard certificate:
 ```shell
 bash certificate_generator.sh
