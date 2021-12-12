@@ -126,7 +126,7 @@ if [ -z "$@" ]; then
 			echo "- Wildcard certificate already exist"
 		else
 			mkdir -p "./certificate/hosts-certs/wildcard/pack"
-			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
+			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$tld/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=*.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 			openssl ca -batch -notext -policy policy_match -days $certvalidity -extensions req_ext -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/wildcard/wildcard_crt.crt" -infiles "./certificate/hosts-certs/wildcard/server.request"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/wildcard/pack"
