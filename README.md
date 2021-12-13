@@ -15,9 +15,9 @@
 ## Description:
 This script aims to create a root CA, an intermediate CA and then certificates, wildcard or not, for your hosts
 in dedicated subfolders.
-After generation, a subfolder named "hosts-certs\*\pack" who contaain the root, intermediate and fullchain certificate to be imported on youur hosts for trust.
+After generation, a subfolder named "hosts-certs\*\pack" who contain the root, intermediate and fullchain certificate to be imported on your hosts for trust.  
 The script also generate a bat script named certificate_importer.bat in eache pack folder intende to import all certs for trust on Windows hosts  
-I'm not very used to certificates generation and management so if you find something strange, please let me know or make a PR.
+I'm not very used to certificates generation and management so if you find something strange, please let me know or make a PR.  
 
 # Usage:
 - Ensure you have openssl installed
