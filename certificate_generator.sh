@@ -31,7 +31,7 @@
 # Version: 2.4 - Edit some paths
 # Version: 2.5 - add check for openssl installation
 # Version: 2.6 - small fixes - correction of cnames
-# Version: 2.7 - fix generation of certificates
+# Version: 2.7 - improvements, add key usage extensions
 
 # ------------- Settings ------------------
 tld="local.domain.tld"
@@ -42,6 +42,22 @@ organisation="Home"
 rootCAvalidity="36500"
 certvalidity="3650"
 # ------------- Settings ------------------
+
+script_generator() {
+echo '@echo off
+REM Version 1.0
+REM Execute as administrator in folder containing all the .crt to import
+echo "----------------------------------------------------------------"
+echo "---------------------- Tonton Jo - 2021 ------------------------"
+echo "------------- Windows certificate Importer V1.0 ----------------"
+echo "----------------------------------------------------------------"
+for %%f in (%~dp0*.crt) do (
+echo "- Importing %%f"
+certutil.exe -enterprise -f -v -AddStore "Root" %%f
+)
+PAUSE
+' > "./certificate/hosts-certs/$I/pack/certificate_importer.bat"
+}
 
 
 if openssl help > /dev/null 2>&1 ; then
@@ -95,13 +111,20 @@ else
 	[req]
 	req_extensions = v3_req
 	distinguished_name = req_distinguished_name
+
 	
 	[ req_ext ]
 	subjectAltName = @alternate_names
-	extendedKeyUsage = serverAuth
+	keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment, keyAgreement 
+	extendedKeyUsage = critical,serverAuth, 1.3.6.1.5.5.8.2.2
+	
+	[ cert_ext ]
+	keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment, keyAgreement 
+	extendedKeyUsage = critical,serverAuth, 1.3.6.1.5.5.8.2.2
+	subjectAltName = @alternate_names
 	
 	[v3_req]
-	basicConstraints = CA:TRUE
+	basicConstraints = critical, CA:TRUE
 	
 	[req_distinguished_name]
 
@@ -121,32 +144,22 @@ fi
 
 # If nothing passed as argument, generate a wildcard for TLD
 if [ -z "$@" ]; then
-		echo "No hostname specified "
+		echo "- No hostname specified "
 		if [[ -d "./certificate/hosts-certs/wildcard" ]]; then
 			echo "- Wildcard certificate already exist"
 		else
+			I=wildcard
 			mkdir -p "./certificate/hosts-certs/wildcard/pack"
-			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$tld/C=$country/ST=$state/O=$organisation/L=$town"
+			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions cert_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$tld/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=*.$tld/C=$country/ST=$state/O=$organisation/L=$town"
-			openssl ca -batch -notext -policy policy_match -days $certvalidity -extensions req_ext -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/wildcard/wildcard_crt.crt" -infiles "./certificate/hosts-certs/wildcard/server.request"
+			openssl ca -batch -notext -policy policy_match -days $certvalidity -extensions cert_ext -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/wildcard/wildcard_crt.crt" -infiles "./certificate/hosts-certs/wildcard/server.request"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/wildcard/pack"
 			cp "./certificate/intermediate/certs/intermediate_crt.crt" "./certificate/hosts-certs/wildcard/pack"
 			cp "./certificate/hosts-certs/wildcard/wildcard_crt.crt" "./certificate/hosts-certs/wildcard/pack"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/wildcard/pack/fullchain.crt"
 			cat "./certificate/intermediate/certs/intermediate_crt.crt" >> "./certificate/hosts-certs/wildcard/pack/fullchain.crt"
 			cat "./certificate/hosts-certs/wildcard/wildcard_crt.crt" >> "./certificate/hosts-certs/wildcard/pack/fullchain.crt"
-			echo '@echo off
-REM Version 1.0
-REM Execute as administrator in folder containing all the .crt to import
-echo "----------------------------------------------------------------"
-echo "---------------------- Tonton Jo - 2021 ------------------------"
-echo "------------- Windows certificate Importer V1.0 ----------------"
-echo "----------------------------------------------------------------"
-for %%f in (%~dp0*.crt) do (
-echo "- Importing %%f"
-certutil.exe -enterprise -f -v -AddStore "Root" %%f
-)
-PAUSE' > "./certificate/hosts-certs/wildcard/pack/certificate_importer.bat"
+			script_generator
 		fi
 	else
 	# If hostname argument passed, generate a certificate for every host
@@ -157,7 +170,7 @@ PAUSE' > "./certificate/hosts-certs/wildcard/pack/certificate_importer.bat"
 			mkdir -p "./certificate/hosts-certs/$I/pack"
 			echo "subjectAltName = DNS:$I.$tld
 extendedKeyUsage = serverAuth" > "./certificate/hosts-certs/$I/subjectaltname_$I.req"
-			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/$I/key.pem" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
+			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions cert_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/$I/key.pem" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/$I/$I.key" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 			openssl ca -batch -notext -policy policy_match -days $certvalidity -extfile "./certificate/hosts-certs/$I/subjectaltname_$I.req" -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/$I/$I.crt" -infiles "./certificate/hosts-certs/$I/$I.request"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/$I/pack"
@@ -166,19 +179,7 @@ extendedKeyUsage = serverAuth" > "./certificate/hosts-certs/$I/subjectaltname_$I
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/$I/pack/fullchain.crt"
 			cat "./certificate/intermediate/certs/intermediate_crt.crt" >> "./certificate/hosts-certs/$I/pack/fullchain.crt"
 			cat "./certificate/hosts-certs/$I/$I.crt" >> "./certificate/hosts-certs/$I/pack/fullchain.crt"
-			echo '@echo off
-REM Version 1.0
-REM Execute as administrator in folder containing all the .crt to import
-echo "----------------------------------------------------------------"
-echo "---------------------- Tonton Jo - 2021 ------------------------"
-echo "------------- Windows certificate Importer V1.0 ----------------"
-echo "----------------------------------------------------------------"
-for %%f in (%~dp0*.crt) do (
-echo "- Importing %%f"
-certutil.exe -enterprise -f -v -AddStore "Root" %%f
-)
-PAUSE
-' > "./certificate/hosts-certs/$I/pack/certificate_importer.bat"
+			script_generator
 	fi
 	done
 fi
