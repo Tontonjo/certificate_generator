@@ -32,9 +32,11 @@
 # Version: 2.5 - add check for openssl installation
 # Version: 2.6 - small fixes - correction of cnames
 # Version: 2.7 - improvements, add key usage extensions
+# Version: 2.8 - Add common name as separated variablee, now create a pfx certificate without password (CAREFULL as it contains the private key!)
 
 # ------------- Settings ------------------
 tld="local.domain.tld"
+commonName="Home Certificate"
 country="fr"
 state="Vaucluse"
 town="Lyon"
@@ -133,10 +135,10 @@ else
 	" > "./certificate/openssl.conf"
 	openssl genrsa -out "./certificate/root-ca/private/ca_key.pem" 2048
 #	openssl ecparam -name prime256v1 -genkey -noout -out "./certificate/root-ca/private/ca_key.pem"
-	openssl req -config "./certificate/openssl.conf" -new -x509 -days $rootCAvalidity -utf8 -nameopt multiline,utf8 -key "./certificate/root-ca/private/ca_key.pem" -sha256 -extensions v3_req -out "./certificate/root-ca/certs/ca_crt.crt" -subj "/C=$country/ST=$state/O=$organisation/CN=$tld/L=$town"
+	openssl req -config "./certificate/openssl.conf" -new -x509 -days $rootCAvalidity -utf8 -nameopt multiline,utf8 -key "./certificate/root-ca/private/ca_key.pem" -sha256 -extensions v3_req -out "./certificate/root-ca/certs/ca_crt.crt" -subj "/C=$country/ST=$state/O=$organisation/CN=$commonName/L=$town"
 	openssl genrsa -out "./certificate/intermediate/private/intermediate_key.pem" 2048
 #	openssl ecparam -name prime256v1 -genkey -noout -out "./certificate/intermediate/private/intermediate_key.pem"
-	openssl req -config "./certificate/openssl.conf" -sha256 -new -utf8 -nameopt multiline,utf8 -key "./certificate/intermediate/private/intermediate_key.pem" -out "./certificate/intermediate/certs/intermediate.csr" -subj "/CN=$tld"
+	openssl req -config "./certificate/openssl.conf" -sha256 -new -utf8 -nameopt multiline,utf8 -key "./certificate/intermediate/private/intermediate_key.pem" -out "./certificate/intermediate/certs/intermediate.csr" -subj "/CN=$commonName"
 	openssl ca -batch -policy policy_match -config "./certificate/openssl.conf" -keyfile "./certificate/root-ca/private/ca_key.pem" -cert "./certificate/root-ca/certs/ca_crt.crt" -extensions v3_req -notext -md sha256 -in "./certificate/intermediate/certs/intermediate.csr" -out "./certificate/intermediate/certs/intermediate_crt.crt"
 
 
@@ -150,7 +152,7 @@ if [ -z "$@" ]; then
 		else
 			I=wildcard
 			mkdir -p "./certificate/hosts-certs/wildcard/pack"
-			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions cert_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$tld/C=$country/ST=$state/O=$organisation/L=$town"
+			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions cert_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=$commonName/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/wildcard/wildcard_key.pem" -out "./certificate/hosts-certs/wildcard/server.request" -nodes -subj "/CN=*.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 			openssl ca -batch -notext -policy policy_match -days $certvalidity -extensions cert_ext -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/wildcard/wildcard_crt.crt" -infiles "./certificate/hosts-certs/wildcard/server.request"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/wildcard/pack"
@@ -159,6 +161,7 @@ if [ -z "$@" ]; then
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/wildcard/pack/fullchain.crt"
 			cat "./certificate/intermediate/certs/intermediate_crt.crt" >> "./certificate/hosts-certs/wildcard/pack/fullchain.crt"
 			cat "./certificate/hosts-certs/wildcard/wildcard_crt.crt" >> "./certificate/hosts-certs/wildcard/pack/fullchain.crt"
+			openssl pkcs12 -passout pass: -export -out "./certificate/hosts-certs/wildcard/wildcard.pfx" -inkey "./certificate/hosts-certs/wildcard/wildcard_key.pem" -in "./certificate/hosts-certs/wildcard/wildcard_crt.crt"
 			script_generator
 		fi
 	else
@@ -170,7 +173,7 @@ if [ -z "$@" ]; then
 			mkdir -p "./certificate/hosts-certs/$I/pack"
 			echo "subjectAltName = DNS:$I.$tld
 extendedKeyUsage = serverAuth" > "./certificate/hosts-certs/$I/subjectaltname_$I.req"
-			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions cert_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/$I/key.pem" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
+			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions cert_ext -newkey rsa:2048 -keyout "./certificate/hosts-certs/$I/key.pem" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$commonName/C=$country/ST=$state/O=$organisation/L=$town"
 #			openssl req -config "./certificate/openssl.conf" -new -nodes -utf8 -nameopt multiline,utf8 -extensions req_ext -newkey ec:<(openssl ecparam -name prime256v1) -keyout "./certificate/hosts-certs/$I/$I.key" -out "./certificate/hosts-certs/$I/$I.request" -nodes -subj "/CN=$I.$tld/C=$country/ST=$state/O=$organisation/L=$town"
 			openssl ca -batch -notext -policy policy_match -days $certvalidity -extfile "./certificate/hosts-certs/$I/subjectaltname_$I.req" -config "./certificate/openssl.conf" -keyfile "./certificate/intermediate/private/intermediate_key.pem" -cert "./certificate/intermediate/certs/intermediate_crt.crt" -out "./certificate/hosts-certs/$I/$I.crt" -infiles "./certificate/hosts-certs/$I/$I.request"
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/$I/pack"
@@ -179,6 +182,7 @@ extendedKeyUsage = serverAuth" > "./certificate/hosts-certs/$I/subjectaltname_$I
 			cp "./certificate/root-ca/certs/ca_crt.crt" "./certificate/hosts-certs/$I/pack/fullchain.crt"
 			cat "./certificate/intermediate/certs/intermediate_crt.crt" >> "./certificate/hosts-certs/$I/pack/fullchain.crt"
 			cat "./certificate/hosts-certs/$I/$I.crt" >> "./certificate/hosts-certs/$I/pack/fullchain.crt"
+			openssl pkcs12 -passout pass: -export -out "./certificate/hosts-certs/$I/$I.pfx" -inkey "./certificate/hosts-certs/$I/key.pem" -in "./certificate/hosts-certs/$I/$I.crt"
 			script_generator
 	fi
 	done
