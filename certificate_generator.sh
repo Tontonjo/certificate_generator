@@ -55,7 +55,7 @@ echo "------------- Windows certificate Importer V1.0 ----------------"
 echo "----------------------------------------------------------------"
 for %%f in (%~dp0*.crt) do (
 echo "- Importing %%f"
-certutil.exe -enterprise -f -v -AddStore "Root" %%f
+certutil.exe -enterprise -f -AddStore "Root" %%f
 )
 PAUSE
 ' > "./certificate/hosts-certs/$I/pack/certificate_importer.bat"
