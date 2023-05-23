@@ -32,7 +32,7 @@
 # Version: 2.5 - add check for openssl installation
 # Version: 2.6 - small fixes - correction of cnames
 # Version: 2.7 - improvements, add key usage extensions
-# Version: 2.8 - Add common name as separated variablee, now create a pfx certificate without password (CAREFULL as it contains the private key!)
+# Version: 2.8 - Add common name as separated variable, now create a pfx certificate without password (CAREFULL as it contains the private key!)
 
 # ------------- Settings ------------------
 tld="local.domain.tld"
