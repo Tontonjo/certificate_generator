@@ -33,6 +33,7 @@
 # Version: 2.6 - small fixes - correction of cnames
 # Version: 2.7 - improvements, add key usage extensions
 # Version: 2.8 - Add common name as separated variable, now create a pfx certificate without password (CAREFULL as it contains the private key!)
+# Version: 2.9 - Tidying certificate import on Windows
 
 # ------------- Settings ------------------
 tld="local.domain.tld"
@@ -50,13 +51,11 @@ echo '@echo off
 REM Version 1.0
 REM Execute as administrator in folder containing all the .crt to import
 echo "----------------------------------------------------------------"
-echo "---------------------- Tonton Jo - 2021 ------------------------"
-echo "------------- Windows certificate Importer V1.0 ----------------"
+echo "---------------------- Tonton Jo - 2024 ------------------------"
+echo "------------- Windows certificate Importer V1.1 ----------------"
 echo "----------------------------------------------------------------"
-for %%f in (%~dp0*.crt) do (
-echo "- Importing %%f"
-certutil.exe -enterprise -f -AddStore "Root" %%f
-)
+certutil.exe -enterprise -f -AddStore "Root" %~dp0ca_crt.crt
+certutil.exe -enterprise -f -AddStore "CA" %~dp0intermediate_crt.crt
 PAUSE
 ' > "./certificate/hosts-certs/$I/pack/certificate_importer.bat"
 }
