@@ -34,6 +34,7 @@
 # Version: 2.7 - improvements, add key usage extensions
 # Version: 2.8 - Add common name as separated variable, now create a pfx certificate without password (CAREFULL as it contains the private key!)
 # Version: 2.9 - Tidying certificate import on Windows
+# Version: 3.0 - Add Client auth capability to certificate
 
 # ------------- Settings ------------------
 tld="local.domain.tld"
@@ -117,11 +118,11 @@ else
 	[ req_ext ]
 	subjectAltName = @alternate_names
 	keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment, keyAgreement 
-	extendedKeyUsage = critical,serverAuth, 1.3.6.1.5.5.8.2.2
+	extendedKeyUsage = critical,serverAuth, 1.3.6.1.5.5.8.2.2, 1.3.6.1.5.5.7.3.2
 	
 	[ cert_ext ]
 	keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment, keyAgreement 
-	extendedKeyUsage = critical,serverAuth, 1.3.6.1.5.5.8.2.2
+	extendedKeyUsage = critical,serverAuth, 1.3.6.1.5.5.8.2.2, 1.3.6.1.5.5.7.3.2
 	subjectAltName = @alternate_names
 	
 	[v3_req]
